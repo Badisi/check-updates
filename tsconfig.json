@@ -1,0 +1,28 @@
+{
+    "extends": "./tsconfig.strict.json",
+    "compilerOptions": {
+        "target": "ESNext",
+        "lib": [
+            "ESNext"
+        ],
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "types": [
+            "node"
+        ],
+        "noEmit": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "declaration": true,
+        "isolatedModules": true,
+        "isolatedDeclarations": true
+    },
+    "include": [
+        "tsdown.config.ts",
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}
