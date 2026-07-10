@@ -3,7 +3,7 @@
 </h1>
 
 <p align="center">
-    <i>📦 An interactive CLI to scan, visualize and upgrade NPM dependencies — locally or globally.</i><br/>
+    📦 <i>An interactive CLI to scan, visualize and upgrade NPM dependencies — locally or globally.</i><br/>
 </p>
 
 <p align="center">
