@@ -13,7 +13,6 @@ const config: UserConfig[] = defineConfig([{
         writeFileSync('dist/package.json', JSON.stringify(pkgJson, null, 4));
 
         cpSync('bin', 'dist/bin', { recursive: true });
-        copyFileSync('cli_preview.png', 'dist/cli_preview.png');
         copyFileSync('README.md', 'dist/README.md');
         copyFileSync('LICENSE', 'dist/LICENSE');
     },
