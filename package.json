@@ -1,7 +1,7 @@
 {
     "name": "@badisi/check-updates",
     "version": "1.0.0",
-    "description": "An interactive CLI to scan global or local dependencies and upgrade to wanted or latest versions.",
+    "description": "An interactive CLI to scan, visualize and upgrade NPM dependencies — locally or globally.",
     "homepage": "https://github.com/Badisi/check-updates",
     "license": "MIT",
     "author": {
