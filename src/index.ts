@@ -135,7 +135,7 @@ const displayUpdates = async (updates: PackageUpdate[], interactive: boolean): P
                 log.warn(styleText('yellow', 'No updates selected.'));
             }
         }
-    } else {
+    } else if (interactive) {
         process.stdout.write('\x1B[1A\x1B[2K');
         log.success(styleText('green', '💚 Packages are up-to-date'));
     }
@@ -314,6 +314,8 @@ void (async (): Promise<void> => {
                 process.stdout.write('\x1B[1A\x1B[2K');
 
                 displayUpdateResults(results, '  Package.json updated  ');
+            } else {
+                process.stdout.write('\x1B[1A\x1B[2K');
             }
         }
 
