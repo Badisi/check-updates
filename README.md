@@ -57,7 +57,7 @@ npm install -g @badisi/check-updates
 check-updates [path...] [options]
 
 # or using the shorthand alias:
-cu [path...] [options]
+bcu [path...] [options]
 
 # or without installation, using `npx` directly:
 npx @badisi/check-updates [path...] [options]
