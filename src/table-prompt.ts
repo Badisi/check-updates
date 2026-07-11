@@ -277,7 +277,7 @@ export class TablePrompt extends Enquirer.Prompt<TableSelectedItem[]> {
 
     private getPagination(renderLines: RenderLine[], terminalHeight: number, fixedLines: number): { start: number; end: number } {
         const getRequiredHeight = (s: number, e: number): number => {
-            const initialCount = fixedLines + (s > 0 ? 1 : 0) + (e < renderLines.length ? 2 : 0);
+            const initialCount = fixedLines + (s > 0 || e < renderLines.length ? 1 : 0);
             return renderLines.slice(s, e).reduce((accumulator, item, index) => {
                 const absoluteIndex = index + s;
                 const hasBonus = (absoluteIndex === s && !item.groupTitle) || item.groupTitle;
@@ -336,10 +336,6 @@ export class TablePrompt extends Enquirer.Prompt<TableSelectedItem[]> {
 
         lines.push(this.columns.map(columnHeaderRenderer).join(' '.repeat(this.COLUMN_GAP)));
 
-        if (start > 0) {
-            lines.push(styleText(['gray', 'italic'], `... ${start} more items above ...`));
-        }
-
         for (let i = start; i < end; i++) {
             const item = renderLines[i];
             if (i === start && !item.groupTitle) {
@@ -353,9 +349,9 @@ export class TablePrompt extends Enquirer.Prompt<TableSelectedItem[]> {
             lines.push(item.line);
         }
 
-        if (end < renderLines.length) {
+        if (start > 0 || end < renderLines.length) {
             lines.push('');
-            lines.push(styleText(['gray', 'italic'], `... ${renderLines.length - end} more items below ...`));
+            lines.push(styleText(['gray'], `[items ${start + 1}-${end} of ${renderLines.length}]`));
         }
 
         lines.push('');
