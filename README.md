@@ -37,14 +37,14 @@ npm install -g @badisi/check-updates
 
 ## Features
 
-✅ **Interactive table UI** — browse, search and toggle package upgrades, grouped by update severity</br>
-✅ **Wanted vs Latest** — upgrade to either: the highest version satisfying your semver range or the absolute latest</br>
-✅ **Color-coded diffs** — instantly see what changed: red for major, cyan for minor, green for patch</br>
-✅ **Smart range preservation** — caret (`^`), tilde (`~`), exact, wildcard, hyphen and OR ranges are all preserved when writing upgrades</br>
-✅ **Monorepo-aware** — scan multiple `package.json` files in a single run using glob patterns</br>
-✅ **Global support** — check and upgrade globally installed NPM packages</br>
-✅ **Caching** — reduce registry requests and speed up subsequent runs</br>
-✅ **Post-upgrade install** — optionally run `npm install` automatically after applying changes</br>
+✅ **Interactive table UI** — browse, search and toggle package upgrades, grouped by update severity<br/>
+✅ **Wanted vs Latest** — upgrade to either: the highest version satisfying your semver range or the absolute latest<br/>
+✅ **Color-coded diffs** — instantly see what changed: red for major, cyan for minor, green for patch<br/>
+✅ **Smart range preservation** — caret (`^`), tilde (`~`), exact, wildcard, hyphen and OR ranges are all preserved when writing upgrades<br/>
+✅ **Monorepo-aware** — scan multiple `package.json` files in a single run using glob patterns<br/>
+✅ **Global support** — check and upgrade globally installed NPM packages<br/>
+✅ **Caching** — reduce registry requests and speed up subsequent runs<br/>
+✅ **Post-upgrade install** — optionally run `npm install` automatically after applying changes<br/>
 
 > **Note:** Global package checking and the post-upgrade install step currently support only **npm**. Pull requests to add support for other package managers are very welcome.
 
