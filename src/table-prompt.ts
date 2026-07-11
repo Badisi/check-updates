@@ -136,7 +136,7 @@ export class TablePrompt extends Enquirer.Prompt<TableSelectedItem[]> {
         const renderLines = this.getRenderLines();
 
         // Pagination logic
-        const terminalHeight = process.stdout.rows - 2 || 24;
+        const terminalHeight = Math.max(10, (process.stdout.rows - 2 || 24) - 4); // leave room for context printed above (intro, file path, spinner)
         const fixedLines = (this.interactive ? 7 : 6) + 1 + 1 + 2; // Message + Instructions + Header + Last empty + Box borders
 
         const { start, end } = this.getPagination(renderLines, terminalHeight, fixedLines);
