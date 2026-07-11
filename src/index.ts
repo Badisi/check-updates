@@ -284,6 +284,8 @@ void (async (): Promise<void> => {
 
             const s1 = startSpinner(styleText('cyan', 'Checking updates'));
             const pkgJson = JSON.parse(await readFile(path, { encoding: 'utf8' })) as PackageJson;
+            delete pkgJson.peerDependencies; // avoid scanning peer-deps
+            delete pkgJson['optionalDependencies']; // avoid scanning optional-deps
             let latestVersions = await latestVersion(pkgJson, { useCache: options.cache });
             if (!options.all) {
                 latestVersions = latestVersions.filter(item => (item.local !== item.wanted) || (item.local !== item.latest) || item.error);
