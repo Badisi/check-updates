@@ -3,7 +3,7 @@ import { box, confirm, intro, isCancel, log, outro, spinner } from '@clack/promp
 import glob from 'fast-glob';
 import { exec, spawn } from 'node:child_process';
 import { access, readFile, stat, writeFile } from 'node:fs/promises';
-import { basename, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 import { promisify, styleText } from 'node:util';
 
 import { version as packageVersion } from '../package.json';
@@ -275,6 +275,8 @@ void (async (): Promise<void> => {
             }
         }
     } else {
+        const oriCwd = process.cwd();
+
         const s = startSpinner(styleText('cyan', `Searching ${styleText('bold', 'package.json')} files`));
         const pkgJsonPaths = await resolvePackagePaths(options.args);
         s.clear();
@@ -282,6 +284,8 @@ void (async (): Promise<void> => {
 
         let hasUpdates = false;
         for (const [index, path] of pkgJsonPaths.entries()) {
+            process.chdir(dirname(path));
+
             const step = (pkgJsonPaths.length > 1) ? `${styleText(['bold', 'cyan'], `[${index + 1}/${pkgJsonPaths.length}]`)} ` : '';
             log.info(`${step}${styleText('white', path)}`);
 
@@ -320,6 +324,8 @@ void (async (): Promise<void> => {
                 displayUpdateResults(results, '  Package.json updated  ');
             }
         }
+
+        process.chdir(oriCwd);
 
         if (options.interactive && hasUpdates) {
             await askInstall();
