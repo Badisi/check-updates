@@ -214,7 +214,11 @@ const resolvePackagePaths = async (args: string[]): Promise<string[]> => {
                 resolvedFiles.add(resolve(arg));
             }
         } catch {
-            const matchedFiles = await glob(normalizedArg, { onlyFiles: true, absolute: true });
+            const matchedFiles = await glob(normalizedArg, {
+                onlyFiles: true,
+                absolute: true,
+                ignore: ['**/node_modules/**']
+             });
             for (const file of matchedFiles) {
                 if (basename(file) === 'package.json') {
                     resolvedFiles.add(file);
