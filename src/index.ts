@@ -41,17 +41,16 @@ const updatePackageJson = async (path: string, updates: UpdateResult[]): Promise
 
     const content = await readFile(path, 'utf8');
     const pkg = JSON.parse(content) as Record<
-        'dependencies' | 'devDependencies' | 'peerDependencies',
+        'dependencies' | 'devDependencies',
         Record<string, string> | undefined
     >;
 
-    updates.forEach(({ pkgName, newValue }) => {
-        if (pkg.dependencies?.[pkgName]) {
+    updates.forEach(({ pkgName, currentValue, newValue }) => {
+        if (pkg.dependencies?.[pkgName] === currentValue) {
             pkg.dependencies[pkgName] = newValue;
-        } else if (pkg.devDependencies?.[pkgName]) {
+        }
+        if (pkg.devDependencies?.[pkgName] === currentValue) {
             pkg.devDependencies[pkgName] = newValue;
-        } else if (pkg.peerDependencies?.[pkgName]) {
-            pkg.peerDependencies[pkgName] = newValue;
         }
     });
 
