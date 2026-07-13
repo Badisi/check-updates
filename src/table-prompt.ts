@@ -5,6 +5,7 @@ import { stripVTControlCharacters as strip, styleText } from 'node:util';
 import semverDiff from 'semver/functions/diff';
 import semverGt from 'semver/functions/gt';
 import semverMajor from 'semver/functions/major';
+import semverMin from 'semver/ranges/min-version';
 
 import type { PackageUpdate } from './index';
 import { colorizeDiff } from './utils';
@@ -387,6 +388,9 @@ const getTableRows = (updates: PackageUpdate[]): TableRow[] => {
 
             const isRowSelectable = !['invalid', 'unavailable', 'latest'].includes(item.groupId);
             item.isWantedSelectable = isRowSelectable && (item.installed !== item.wanted);
+            if (!pkg.installed && (semverMin(item.tagOrRange)?.version === item.wanted)) {
+                item.isWantedSelectable = false;
+            }
             item.isLatestSelectable = isRowSelectable && ((item.installed !== item.latest) && (item.wanted !== item.latest));
             if (pkg.installed && pkg.wanted && semverGt(pkg.installed, pkg.wanted)) {
                 item.isLatestSelectable = true;
