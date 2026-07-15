@@ -1,11 +1,11 @@
 import { latestVersion, type PackageJson } from '@badisi/latest-version';
 import { box, confirm, intro, isCancel, log, outro, spinner } from '@clack/prompts';
-import glob from 'fast-glob';
 import { exec, spawn } from 'node:child_process';
 import { access, readFile, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, resolve } from 'node:path';
 import { promisify, styleText } from 'node:util';
 import semverMin from 'semver/ranges/min-version';
+import { glob } from 'tinyglobby';
 
 import { version as packageVersion } from '../package.json';
 import { TablePrompt, type TableSelectedItem } from './table-prompt';
