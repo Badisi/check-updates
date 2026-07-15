@@ -5,6 +5,7 @@ import { exec, spawn } from 'node:child_process';
 import { access, readFile, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, resolve } from 'node:path';
 import { promisify, styleText } from 'node:util';
+import semverMin from 'semver/ranges/min-version';
 
 import { version as packageVersion } from '../package.json';
 import { TablePrompt, type TableSelectedItem } from './table-prompt';
@@ -37,7 +38,9 @@ interface Options {
 }
 
 const updatePackageJson = async (path: string, updates: UpdateResult[]): Promise<void> => {
-    try { await access(path); } catch { return; }
+    try {
+        await access(path);
+    } catch { return; }
 
     const content = await readFile(path, 'utf8');
     const pkg = JSON.parse(content) as Record<
@@ -220,8 +223,8 @@ const resolvePackagePaths = async (args: string[]): Promise<string[]> => {
             const matchedFiles = await glob(normalizedArg, {
                 onlyFiles: true,
                 absolute: true,
-                ignore: ['**/node_modules/**']
-             });
+                ignore: ['**/node_modules/**'],
+            });
             for (const file of matchedFiles) {
                 if (basename(file) === 'package.json') {
                     resolvedFiles.add(file);
@@ -295,7 +298,12 @@ void (async (): Promise<void> => {
             delete pkgJson['optionalDependencies']; // avoid scanning optional-deps
             let latestVersions = await latestVersion(pkgJson, { useCache: options.cache });
             if (!options.all) {
-                latestVersions = latestVersions.filter(item => (item.local !== item.wanted) || (item.local !== item.latest) || item.error);
+                latestVersions = latestVersions.filter(item =>
+                    (item.local !== item.wanted)
+                    || (item.local !== item.latest)
+                    || (item.wantedTagOrRange && (semverMin(item.wantedTagOrRange)?.version !== item.wanted))
+                    || (item.error),
+                );
             }
             const updates: PackageUpdate[] = await Promise.all(latestVersions
                 .map(async ({ name, wantedTagOrRange: tagOrRange, local: installed, wanted, latest, error }) => {

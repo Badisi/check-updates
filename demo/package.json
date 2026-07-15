@@ -1,10 +1,12 @@
 {
     "dependencies": {
+        "@commitlint/cli": "^21.0.0",
         "@types/node": "^26.0.0",
         "chokidar": "^4.0.0",
         "eslint": "^20.0.0",
         "fast-glob": "^3.0.0",
         "joojoo": "^2.0.0",
+        "samsung-tv-remote": "^3.0.9",
         "semver": "^7.x",
         "tsdown": "0.22.1",
         "tsx": "~4.22.0",

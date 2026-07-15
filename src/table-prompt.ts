@@ -63,7 +63,7 @@ interface TableColumn {
 }
 
 type TableRowGroupId
-    = 'patch' | 'minor' | 'major' | 'majorVersionZero' | 'missing' | 'invalid' | 'unsatisfied' | 'unavailable' | 'latest';
+    = 'patch' | 'minor' | 'major' | 'majorVersionZero' | 'missing' | 'unsynced' | 'invalid' | 'unsatisfied' | 'unavailable' | 'latest';
 
 interface TableRowGroup {
     id: TableRowGroupId;
@@ -375,25 +375,32 @@ const getTableRows = (updates: PackageUpdate[]): TableRow[] => {
     const groupOrder = getTableRowGroups().map(group => group.id);
     return updates
         .map(pkg => {
-            const item = {
+            const item: TableRow = {
                 groupId: getTableRowGroupIdForPackage(pkg),
                 pkgName: pkg.name,
                 tagOrRange: pkg.tagOrRange ?? 'unknown',
-                separator: '→',
+                separator: '  ➔',
                 installed: pkg.installed ?? 'unknown',
                 wanted: pkg.wanted ?? 'unknown',
                 latest: pkg.latest ?? 'unknown',
                 url: (pkg.homepage) ? `\u001b]8;;${pkg.homepage}\u001b\\${new URL(pkg.homepage).hostname}\u001b]8;;\u001b\\ 🔗` : '-',
-            } as TableRow;
+                isWantedSelectable: false,
+                isLatestSelectable: false,
+            };
 
             const isRowSelectable = !['invalid', 'unavailable', 'latest'].includes(item.groupId);
-            item.isWantedSelectable = isRowSelectable && (item.installed !== item.wanted);
-            if (!pkg.installed && (semverMin(item.tagOrRange)?.version === item.wanted)) {
-                item.isWantedSelectable = false;
-            }
-            item.isLatestSelectable = isRowSelectable && ((item.installed !== item.latest) && (item.wanted !== item.latest));
-            if (pkg.installed && pkg.wanted && semverGt(pkg.installed, pkg.wanted)) {
-                item.isLatestSelectable = true;
+            if (isRowSelectable) {
+                if (item.installed !== item.wanted) {
+                    item.isWantedSelectable = true;
+                } else if (semverMin(item.tagOrRange)?.version !== item.wanted) {
+                    item.isWantedSelectable = true;
+                }
+
+                if ((item.installed !== item.latest) && (item.wanted !== item.latest)) {
+                    item.isLatestSelectable = true;
+                } else if (pkg.installed && pkg.wanted && semverGt(pkg.installed, pkg.wanted)) {
+                    item.isLatestSelectable = true;
+                }
             }
 
             return item;
@@ -444,6 +451,9 @@ const getTableRowGroupIdForPackage = (pkg: PackageUpdate): TableRowGroupId => {
         const newVersion = (pkg.installed !== pkg.wanted) ? pkg.wanted : pkg.latest;
         const releaseType = semverDiff(pkg.installed, newVersion);
         if (releaseType === null) {
+            if (pkg.tagOrRange && (semverMin(pkg.tagOrRange)?.version !== pkg.wanted)) {
+                return 'unsynced';
+            }
             return 'latest';
         } else if (semverMajor(newVersion) === 0) {
             return 'majorVersionZero';
@@ -475,6 +485,8 @@ const cellRenderer = (row: TableRow, column: TableColumn, isFocused = false, isS
                 content = styleText('gray', content);
                 break;
             case 'separator':
+                content = styleText('gray', content);
+                break;
             case 'url':
                 content = styleText('blue', content);
                 break;
@@ -525,9 +537,10 @@ const getTableRowGroups = (): TableRowGroup[] => [
     { id: 'minor', color: 'cyan', title: 'Minor', desc: 'backwards-compatible features' },
     { id: 'major', color: 'red', title: 'Major', desc: 'potentially breaking API changes' },
     { id: 'majorVersionZero', color: 'magenta', title: 'Major version zero', desc: 'not stable, anything may change' },
-    { id: 'missing', color: '#c8683b', title: 'Missing', desc: 'not installed' },
-    { id: 'unsatisfied', color: '#c8683b', title: 'Invalid', desc: 'installed version is outside the allowed range' },
+    { id: 'unsynced', color: '#c8683b', title: 'Not-synced', desc: 'installed version is not synced with the range' },
+    { id: 'unsatisfied', color: '#c8683b', title: 'Unsatisfied', desc: 'installed version is outside the range' },
     { id: 'invalid', color: '#c8683b', title: 'Invalid', desc: 'wrong range' },
+    { id: 'missing', color: '#c8683b', title: 'Missing', desc: 'not installed' },
     { id: 'unavailable', color: '#c8683b', title: 'Unavailable', desc: 'registry error' },
     { id: 'latest', color: 'gray', title: 'Latest', desc: 'no newer updates available' },
 ];
