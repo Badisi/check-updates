@@ -72,8 +72,8 @@
         "vitest": "^4.1.10"
     },
     "allowScripts": {
-        "esbuild@0.28.1": true,
-        "fsevents@2.3.3": true,
-        "@hug/eslint-config@26.0.0": true
+        "@hug/eslint-config": true,
+        "esbuild": true,
+        "fsevents": true
     }
 }
