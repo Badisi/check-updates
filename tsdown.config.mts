@@ -5,12 +5,8 @@ const config: UserConfig[] = defineConfig([{
     entry: ['src/index.ts'],
     format: ['esm'],
     clean: true,
+    dts: false,
     sourcemap: false,
-    dts: {
-        compilerOptions: {
-            declarationMap: false,
-        },
-    },
     onSuccess: (): void => {
         const pkgJson = JSON.parse(readFileSync('package.json', 'utf8')) as Record<string, unknown>;
         const postinstall = (pkgJson['scripts'] as Record<string, string> | undefined)?.['postinstall'];

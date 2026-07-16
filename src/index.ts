@@ -94,7 +94,9 @@ const askInstall = async (global = false, args: string[] = []): Promise<void> =>
 
 const startSpinner = (message: string): ReturnType<typeof spinner> => {
     const s = spinner({
+        // TODO: not working: check and test once https://github.com/bombshell-dev/clack/pull/581 is fixed
         onCancel: (): void => {
+            process.stdout.write('\x1B[1A\x1B[2K');
             outro(styleText('red', 'Canceled.'));
             process.exit(0);
         },
