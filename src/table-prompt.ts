@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/naming-convention */
-
-import Enquirer from 'enquirer';
+import { Prompt } from '@clack/core';
 import { stripVTControlCharacters as strip, styleText } from 'node:util';
 import semverDiff from 'semver/functions/diff';
 import semverGt from 'semver/functions/gt';
@@ -9,31 +7,6 @@ import semverMin from 'semver/ranges/min-version';
 
 import type { PackageUpdate } from './index';
 import { colorizeDiff } from './utils';
-
-/** Used to fix Enquirer missing types */
-declare module 'enquirer' {
-    /* eslint-disable @typescript-eslint/method-signature-style */
-    interface Prompt<V = string> {
-        state: {
-            size: number;
-            submitted: boolean;
-            canceled: boolean;
-        };
-        value: V;
-        stdout: NodeJS.WriteStream;
-        clear(lines?: number): void;
-        close(): Promise<void>;
-        render(): void;
-        run(): Promise<V>;
-        submit(value?: unknown): Promise<void>;
-        up(): void;
-        down(): void;
-        left(): void;
-        right(): void;
-        space(): void;
-    }
-    /* eslint-enable @typescript-eslint/method-signature-style */
-}
 
 type Color = Parameters<typeof styleText>[0];
 
@@ -47,10 +20,10 @@ interface RenderLine {
     groupDesc?: string;
 }
 
-type TablePromptOptions = Omit<ConstructorParameters<typeof Enquirer.Prompt>[0], 'name' | 'type' | 'message'> & {
+interface TablePromptOptions {
     interactive: boolean;
     updates: PackageUpdate[];
-};
+}
 
 type TableColumnId = Exclude<keyof TableRow, 'groupId' | 'isWantedSelectable' | 'isLatestSelectable'>;
 
@@ -96,171 +69,149 @@ const CHEVRON = '❯ ';
 const CHECKBOX_ON = ' ◉ ';
 const CHECKBOX_OFF = ' ◯ ';
 
-export class TablePrompt extends Enquirer.Prompt<TableSelectedItem[]> {
-    private COLUMN_GAP = 3;
+class TablePrompt extends Prompt<TableSelectedItem[]> {
+    #columnGap = 3;
 
-    private interactive = false;
-    private rows: TableRow[] = [];
-    private columns: TableColumn[] = [];
-    private updates: PackageUpdate[] = [];
+    #interactive = false;
+    #rows: TableRow[] = [];
+    #columns: TableColumn[] = [];
+    #updates: PackageUpdate[] = [];
 
-    private currentRowIndex = 0;
-    private currentColumnIndex = 0; // 0 = Wanted, 1 = Latest
+    #currentRowIndex = 0;
+    #currentColumnIndex = 0; // 0 = Wanted, 1 = Latest
 
-    private selectedUpdates = new Map<string, 'wanted' | 'latest'>();
+    #selectedUpdates = new Map<string, 'wanted' | 'latest'>();
 
     public constructor(options: TablePromptOptions) {
-        // @ts-expect-error Not assignable to parameter of type 'PromptOptions | undefined'
-        super(options);
-
-        this.interactive = options.interactive;
-        this.updates = options.updates;
-    }
-
-    public override async run(): Promise<TableSelectedItem[]> {
-        this.stdout.write('\u001b[?25l'); // Hide cursor
-
-        this.rows = getTableRows(this.updates);
-        this.columns = getTableColumns(this.rows, this.interactive);
-        if (this.interactive) {
-            this.ensureValidCurrentColumnIndex();
-        }
-        return await super.run();
-    };
-
-    public override render(): void {
-        if (this.state.submitted || this.state.canceled) {
-            this.clear();
-            return;
-        }
-
-        const renderLines = this.getRenderLines();
-
-        // Pagination logic
-        const terminalHeight = Math.max(10, (process.stdout.rows - 2 || 24) - 4); // leave room for context printed above (intro, file path, spinner)
-        const fixedLines = (this.interactive ? 7 : 6) + 1 + 1 + 2; // Message + Instructions + Header + Last empty + Box borders
-
-        const { start, end } = this.getPagination(renderLines, terminalHeight, fixedLines);
-        const lines = this.assembleLines(renderLines, start, end);
-
-        const output = drawBox(lines.filter((l): l is string => l !== undefined));
-        this.clear();
-        this.stdout.write(output);
-        this.state.size = output.split('\n').length - 1;
-    };
-
-    public override clear(): void {
-        if (this.state.size > 0) {
-            this.stdout.write(`\u001b[${this.state.size}A\r\u001b[J`);
-            this.state.size = 0;
-        }
-    }
-
-    public override async close(): Promise<void> {
-        try {
-            await super.close();
-        } catch (error) {
-            if (error && (typeof error === 'object') && ('code' in error) && (error.code !== 'ERR_USE_AFTER_CLOSE')) {
-                throw error;
-            }
-        } finally {
-            this.stdout.write('\u001b[?25h'); // Show cursor
-        }
-    }
-
-    public override up(): void {
-        if (this.currentRowIndex > 0) {
-            this.currentRowIndex -= 1;
-            if (this.interactive) {
-                this.ensureValidCurrentColumnIndex();
-            }
-        }
-        this.render();
-    }
-
-    public override down(): void {
-        if (this.currentRowIndex < this.rows.length - 1) {
-            this.currentRowIndex += 1;
-            if (this.interactive) {
-                this.ensureValidCurrentColumnIndex();
-            }
-        }
-        this.render();
-    }
-
-    public override left(): void {
-        if (this.interactive) {
-            const row = this.rows[this.currentRowIndex];
-            if (row.isWantedSelectable) {
-                this.currentColumnIndex = 0;
-                this.render();
-            }
-        }
-    }
-
-    public override right(): void {
-        if (this.interactive) {
-            const row = this.rows[this.currentRowIndex];
-            if (row.isLatestSelectable) {
-                this.currentColumnIndex = 1;
-                this.render();
-            }
-        }
-    }
-
-    public override space(): void {
-        if (this.interactive) {
-            const row = this.rows[this.currentRowIndex];
-            const selectedType = (this.currentColumnIndex === 0) ? 'wanted' : 'latest';
-            const isSelectable = (selectedType === 'wanted') ? row.isWantedSelectable : row.isLatestSelectable;
-
-            if (isSelectable) {
-                const currentType = this.selectedUpdates.get(row.pkgName);
-                if (currentType === selectedType) {
-                    this.selectedUpdates.delete(row.pkgName);
-                } else {
-                    this.selectedUpdates.set(row.pkgName, selectedType);
+        super({
+            render() {
+                const tablePrompt = this as unknown as TablePrompt;
+                if (tablePrompt.state === 'submit' || tablePrompt.state === 'cancel') {
+                    return undefined;
                 }
-                this.render();
+                return tablePrompt.#renderContent();
+            },
+        });
+
+        this.#interactive = options.interactive;
+        this.#updates = options.updates;
+
+        this.on('cursor', action => {
+            switch (action) {
+                case 'up': { this.#handleUp(); break; }
+                case 'down': { this.#handleDown(); break; }
+                case 'left': { this.#handleLeft(); break; }
+                case 'right': { this.#handleRight(); break; }
+                case 'space': { this.#handleSpace(); break; }
+                default: { break; }
             }
-        }
+        });
     }
 
-    public override async submit(): Promise<void> {
-        this.state.submitted = true;
-        this.render();
-        this.stdout.write('\u001b[?25h'); // Show cursor
-        this.value = Array.from(this.selectedUpdates.entries())
+    public override async prompt(): Promise<symbol | TableSelectedItem[] | undefined> {
+        this.#rows = getTableRows(this.#updates);
+        this.#columns = getTableColumns(this.#rows, this.#interactive);
+        if (this.#interactive) {
+            this.#ensureValidCurrentColumnIndex();
+        }
+        return super.prompt();
+    }
+
+    protected override _shouldSubmit(): boolean {
+        this.value = Array.from(this.#selectedUpdates.entries())
             .reduce<TableSelectedItem[]>((items, [pkgName, type]) => {
-                const row = this.rows.find(r => r.pkgName === pkgName);
+                const row = this.#rows.find(r => r.pkgName === pkgName);
                 if (row) {
                     items.push({ pkgName, tagOrRange: row.tagOrRange, installed: row.installed, selected: row[type] });
                 }
                 return items;
             }, []);
-        return super.submit();
+        return true;
     }
 
-    // --- HELPER(s) ---
+    #handleUp(): void {
+        if (this.#currentRowIndex > 0) {
+            this.#currentRowIndex -= 1;
+            if (this.#interactive) {
+                this.#ensureValidCurrentColumnIndex();
+            }
+        }
+    }
 
-    private getRenderLines(): RenderLine[] {
+    #handleDown(): void {
+        if (this.#currentRowIndex < this.#rows.length - 1) {
+            this.#currentRowIndex += 1;
+            if (this.#interactive) {
+                this.#ensureValidCurrentColumnIndex();
+            }
+        }
+    }
+
+    #handleLeft(): void {
+        if (this.#interactive) {
+            const row = this.#rows[this.#currentRowIndex];
+            if (row.isWantedSelectable) {
+                this.#currentColumnIndex = 0;
+            }
+        }
+    }
+
+    #handleRight(): void {
+        if (this.#interactive) {
+            const row = this.#rows[this.#currentRowIndex];
+            if (row.isLatestSelectable) {
+                this.#currentColumnIndex = 1;
+            }
+        }
+    }
+
+    #handleSpace(): void {
+        if (this.#interactive) {
+            const row = this.#rows[this.#currentRowIndex];
+            const selectedType = (this.#currentColumnIndex === 0) ? 'wanted' : 'latest';
+            const isSelectable = (selectedType === 'wanted') ? row.isWantedSelectable : row.isLatestSelectable;
+
+            if (isSelectable) {
+                const currentType = this.#selectedUpdates.get(row.pkgName);
+                if (currentType === selectedType) {
+                    this.#selectedUpdates.delete(row.pkgName);
+                } else {
+                    this.#selectedUpdates.set(row.pkgName, selectedType);
+                }
+            }
+        }
+    }
+
+    #renderContent(): string {
+        const renderLines = this.#getRenderLines();
+
+        const terminalHeight = Math.max(10, (process.stdout.rows - 2 || 24) - 4);
+        const fixedLines = (this.#interactive ? 7 : 6) + 1 + 1 + 2;
+
+        const { start, end } = this.#getPagination(renderLines, terminalHeight, fixedLines);
+        const lines = this.#assembleLines(renderLines, start, end);
+
+        return drawBox(lines.filter((l): l is string => l !== undefined));
+    }
+
+    #getRenderLines(): RenderLine[] {
         const groups = getTableRowGroups();
-        return this.rows.reduce<RenderLine[]>((items, row, index) => {
+        return this.#rows.reduce<RenderLine[]>((items, row, index) => {
             const group = groups.find(g => g.id === row.groupId);
             if (!group) { return items; }
 
             const isFirstInGroup = (items.length === 0) || (items[items.length - 1].groupId !== group.id);
             const groupTitle = (isFirstInGroup) ? styleText(group.color, `${styleText('bold', group.title)} ${styleText('italic', `(${group.desc})`)}`) : undefined;
 
-            const isFocusedRow = (this.currentRowIndex === index);
+            const isFocusedRow = (this.#currentRowIndex === index);
             const chevron = isFocusedRow ? styleText('white', CHEVRON) : ' '.repeat(CHEVRON.length);
 
-            const line = this.columns.map(column => {
-                const isSelectable = this.interactive && ((column.id === 'wanted' && row.isWantedSelectable) || (column.id === 'latest' && row.isLatestSelectable));
-                const isSelected = (this.selectedUpdates.get(row.pkgName) === column.id);
-                const isFocused = this.interactive && isFocusedRow && isSelectable && column.isSelectable && ((column.id === 'wanted' ? this.currentColumnIndex === 0 : this.currentColumnIndex === 1));
+            const line = this.#columns.map(column => {
+                const isSelectable = this.#interactive && ((column.id === 'wanted' && row.isWantedSelectable) || (column.id === 'latest' && row.isLatestSelectable));
+                const isSelected = (this.#selectedUpdates.get(row.pkgName) === column.id);
+                const isFocused = this.#interactive && isFocusedRow && isSelectable && column.isSelectable && ((column.id === 'wanted' ? this.#currentColumnIndex === 0 : this.#currentColumnIndex === 1));
                 return cellRenderer(row, column, isFocused, isSelectable, isSelected);
-            }).join(' '.repeat(this.COLUMN_GAP));
+            }).join(' '.repeat(this.#columnGap));
 
             items.push({
                 rowIndex: index,
@@ -276,7 +227,7 @@ export class TablePrompt extends Enquirer.Prompt<TableSelectedItem[]> {
         }, []);
     }
 
-    private getPagination(renderLines: RenderLine[], terminalHeight: number, fixedLines: number): { start: number; end: number } {
+    #getPagination(renderLines: RenderLine[], terminalHeight: number, fixedLines: number): { start: number; end: number } {
         const getRequiredHeight = (s: number, e: number): number => {
             const initialCount = fixedLines + (s > 0 || e < renderLines.length ? 1 : 0);
             return renderLines.slice(s, e).reduce((accumulator, item, index) => {
@@ -289,7 +240,7 @@ export class TablePrompt extends Enquirer.Prompt<TableSelectedItem[]> {
 
         let start = 0;
         let end = renderLines.length;
-        const cursorIndex = Math.max(0, renderLines.findIndex(l => l.rowIndex === this.currentRowIndex));
+        const cursorIndex = Math.max(0, renderLines.findIndex(l => l.rowIndex === this.#currentRowIndex));
 
         if (getRequiredHeight(0, renderLines.length) > terminalHeight - 1) {
             start = cursorIndex;
@@ -313,14 +264,14 @@ export class TablePrompt extends Enquirer.Prompt<TableSelectedItem[]> {
         return { start, end };
     }
 
-    private assembleLines(renderLines: RenderLine[], start: number, end: number): (string | undefined)[] {
+    #assembleLines(renderLines: RenderLine[], start: number, end: number): (string | undefined)[] {
         const lines: (string | undefined)[] = [
             '',
             styleText('white', '🔥 Important updates are available.'),
             '',
         ];
 
-        if (this.interactive) {
+        if (this.#interactive) {
             lines.push(
                 styleText('gray', '↑/↓:   select a version'),
                 styleText('gray', 'Space: toggle selection'),
@@ -335,14 +286,13 @@ export class TablePrompt extends Enquirer.Prompt<TableSelectedItem[]> {
             );
         }
 
-        lines.push(this.columns.map(columnHeaderRenderer).join(' '.repeat(this.COLUMN_GAP)));
+        lines.push(this.#columns.map(columnHeaderRenderer).join(' '.repeat(this.#columnGap)));
 
         for (let i = start; i < end; i++) {
             const item = renderLines[i];
-            if (i === start && !item.groupTitle) {
+            if (i === start && !item.groupTitle && item.groupTitleRaw && item.groupDesc) {
                 lines.push('');
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                lines.push(styleText(item.groupColor, `${styleText('bold', item.groupTitleRaw!)} ${styleText('italic', `(${item.groupDesc!})`)}`));
+                lines.push(styleText(item.groupColor, `${styleText('bold', item.groupTitleRaw)} ${styleText('italic', `(${item.groupDesc})`)}`));
             } else if (item.groupTitle) {
                 lines.push('');
                 lines.push(item.groupTitle);
@@ -359,12 +309,12 @@ export class TablePrompt extends Enquirer.Prompt<TableSelectedItem[]> {
         return lines;
     }
 
-    private ensureValidCurrentColumnIndex(): void {
-        const row = this.rows[this.currentRowIndex];
-        if (this.currentColumnIndex === 0 && !row.isWantedSelectable) {
-            this.currentColumnIndex = 1;
-        } else if (this.currentColumnIndex === 1 && !row.isLatestSelectable) {
-            this.currentColumnIndex = 0;
+    #ensureValidCurrentColumnIndex(): void {
+        const row = this.#rows[this.#currentRowIndex];
+        if (this.#currentColumnIndex === 0 && !row.isWantedSelectable) {
+            this.#currentColumnIndex = 1;
+        } else if (this.#currentColumnIndex === 1 && !row.isLatestSelectable) {
+            this.#currentColumnIndex = 0;
         }
     }
 }
@@ -549,12 +499,17 @@ const drawBox = (lines: string[], color: Color = 'cyan', horizontalPadding = 3):
     const results: string[] = [];
     const maxLineWidth = lines.reduce((max, row) => Math.max(max, strip(row).length), 0);
 
-    results.push(styleText(color, `┌${'─'.repeat(maxLineWidth + (horizontalPadding * 2))}┐`));
+    results.push(styleText(color, `\u250c${'\u2500'.repeat(maxLineWidth + (horizontalPadding * 2))}\u2510`));
     lines.forEach(row => {
         const padding = ' '.repeat(horizontalPadding);
         const fullRow = `${row}${' '.repeat(maxLineWidth - strip(row).length)}`;
-        results.push(`${styleText(color, '│')}${padding}${fullRow}${padding}${styleText(color, '│')}`);
+        results.push(`${styleText(color, '\u2502')}${padding}${fullRow}${padding}${styleText(color, '\u2502')}`);
     });
-    results.push(styleText(color, `└${'─'.repeat(maxLineWidth + (horizontalPadding * 2))}┘`));
+    results.push(styleText(color, `\u2514${'\u2500'.repeat(maxLineWidth + (horizontalPadding * 2))}\u2518`));
     return results.join('\n');
+};
+
+export const table = async (options: TablePromptOptions): Promise<symbol | TableSelectedItem[] | undefined> => {
+    const tablePrompt = new TablePrompt(options);
+    return tablePrompt.prompt();
 };

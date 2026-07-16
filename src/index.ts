@@ -8,7 +8,7 @@ import semverMin from 'semver/ranges/min-version';
 import { glob } from 'tinyglobby';
 
 import { version as packageVersion } from '../package.json';
-import { TablePrompt, type TableSelectedItem } from './table-prompt';
+import { table, type TableSelectedItem } from './table-prompt';
 import { colorizeDiff, getPackageHomePage, updateSemverRange } from './utils';
 
 interface UpdateResult {
@@ -122,16 +122,17 @@ const displayUpdateResults = (items: UpdateResult[], title = ''): void => {
 
 const displayUpdates = async (updates: PackageUpdate[], interactive: boolean): Promise<TableSelectedItem[]> => {
     if (updates.length) {
-        const prompt = new TablePrompt({ updates, interactive });
-        prompt.on('cancel', () => {
+        const selectedUpdates = await table({ updates, interactive });
+        process.stdout.write('\x1B[1A\x1B[2K');
+
+        if (isCancel(selectedUpdates)) {
             process.stdout.write('\x1B[1A\x1B[2K');
             outro(styleText('red', 'Canceled.'));
             process.exit(0);
-        });
+        }
 
-        const selectedUpdates = await prompt.run();
         if (interactive) {
-            if (selectedUpdates.length) {
+            if (selectedUpdates?.length) {
                 return selectedUpdates;
             } else {
                 process.stdout.write('\x1B[1A\x1B[2K');
