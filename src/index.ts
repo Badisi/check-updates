@@ -159,6 +159,9 @@ const displayHelp = (header: string): void => {
         styleText('bold', 'VERSION:'),
         `    ${styleText('blue', packageVersion)}`,
         '',
+        styleText('bold', 'DESCRIPTION:'),
+        '    Scan, visualize and upgrade NPM dependencies — locally or globally.',
+        '',
         styleText('bold', 'USAGE:'),
         '    $ check-updates [path...] [options]',
         '    $ cu [path...] [options]',
@@ -172,8 +175,8 @@ const displayHelp = (header: string): void => {
         `    ${styleText('cyan', '-i, --interactive')}  Run in interactive mode with prompts`,
         `    ${styleText('cyan', '--all')}              Include up-to-date packages in the output`,
         `    ${styleText('cyan', '-c, --cache')}        Enable caching to speed up operations`,
-        `    ${styleText('cyan', '-v, --version')}      Print this package version`,
-        `    ${styleText('cyan', '-h, --help')}         Show this help information map`,
+        `    ${styleText('cyan', '-v, --version')}      Print version`,
+        `    ${styleText('cyan', '-h, --help')}         Show this help message`,
     ].join('\n'), '\n');
 };
 

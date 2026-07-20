@@ -30,8 +30,15 @@ This tool scans your project's dependencies, checks for updates on the NPM regis
 
 In interactive mode, select exactly which packages to upgrade and whether to use the **Wanted** or **Latest** version. The tool then updates your `package.json` files in place while preserving your existing semver ranges and optionally runs `npm install` to apply the changes.
 
+
+## Installation
+
 ```sh
 npm install -g @badisi/check-updates
+```
+
+```sh
+yarn add @badisi/check-updates
 ```
 
 
@@ -65,7 +72,14 @@ npx @badisi/check-updates [path...] [options]
 ```
 
 
-### Options
+#### Arguments
+
+| Argument | Description |
+| :--- | :--- |
+| `path...` | One or more file paths, folder paths or glob patterns.</br>*Defaults to the current working directory*. |
+
+
+#### Options
 
 | Option | Description |
 | :--- | :--- |
@@ -77,7 +91,7 @@ npx @badisi/check-updates [path...] [options]
 | `-h, --help` | Show help information. |
 
 
-### Examples
+#### Examples
 
 * **Check global packages**
 
