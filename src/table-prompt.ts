@@ -1,4 +1,4 @@
-import { Prompt } from '@clack/core';
+import { type CANCEL_SYMBOL, Prompt } from '@clack/core';
 import { stripVTControlCharacters as strip, styleText } from 'node:util';
 import semverDiff from 'semver/functions/diff';
 import semverGt from 'semver/functions/gt';
@@ -108,7 +108,7 @@ class TablePrompt extends Prompt<TableSelectedItem[]> {
         });
     }
 
-    public override async prompt(): Promise<symbol | TableSelectedItem[] | undefined> {
+    public override async prompt(): Promise<typeof CANCEL_SYMBOL | TableSelectedItem[] | undefined> {
         this.#rows = getTableRows(this.#updates);
         this.#columns = getTableColumns(this.#rows, this.#interactive);
         if (this.#interactive) {
@@ -509,7 +509,7 @@ const drawBox = (lines: string[], color: Color = 'cyan', horizontalPadding = 3):
     return results.join('\n');
 };
 
-export const table = async (options: TablePromptOptions): Promise<symbol | TableSelectedItem[] | undefined> => {
+export const table = async (options: TablePromptOptions): Promise<typeof CANCEL_SYMBOL | TableSelectedItem[] | undefined> => {
     const tablePrompt = new TablePrompt(options);
     return tablePrompt.prompt();
 };
