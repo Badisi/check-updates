@@ -4,12 +4,12 @@ import { exec, spawn } from 'node:child_process';
 import { access, readFile, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, resolve } from 'node:path';
 import { promisify, styleText } from 'node:util';
-import semverMin from 'semver/ranges/min-version';
+import semverMin from 'semver/ranges/min-version.js';
 import { glob } from 'tinyglobby';
 
-import { version as packageVersion } from '../package.json';
-import { table, type TableSelectedItem } from './table-prompt';
-import { colorizeDiff, getPackageHomePage, updateSemverRange } from './utils';
+import packageJson from '../package.json' with { type: 'json' };
+import { table, type TableSelectedItem } from './table-prompt.js';
+import { colorizeDiff, getPackageHomePage, updateSemverRange } from './utils.js';
 
 interface UpdateResult {
     pkgName: string;
@@ -157,7 +157,7 @@ const displayHelp = (header: string): void => {
         header,
         '',
         styleText('bold', 'VERSION:'),
-        `    ${styleText('blue', packageVersion)}`,
+        `    ${styleText('blue', packageJson.version)}`,
         '',
         styleText('bold', 'DESCRIPTION:'),
         '    Scan, visualize and upgrade NPM dependencies — locally or globally.',
@@ -248,7 +248,7 @@ void (async (): Promise<void> => {
 
     const options = readOptions();
     if (options.version) {
-        console.log(`v${packageVersion}`);
+        console.log(`v${packageJson.version}`);
         return;
     } else if (options.help) {
         displayHelp(header);

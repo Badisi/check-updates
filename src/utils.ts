@@ -1,8 +1,8 @@
 import { styleText } from 'node:util';
 import packageJson from 'package-json';
-import semverLt from 'semver/functions/lt';
-import semverValid from 'semver/functions/valid';
-import semverMinVersion from 'semver/ranges/min-version';
+import semverLt from 'semver/functions/lt.js';
+import semverValid from 'semver/functions/valid.js';
+import semverMinVersion from 'semver/ranges/min-version.js';
 
 type Color = Parameters<typeof styleText>[0];
 

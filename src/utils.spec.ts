@@ -1,7 +1,7 @@
 import { styleText } from 'node:util';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { colorizeDiff, updateSemverRange } from './utils';
+import { colorizeDiff, updateSemverRange } from './utils.js';
 
 describe('updateSemverRange', () => {
     it('should preserve caret prefix', () => {

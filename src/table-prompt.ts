@@ -1,12 +1,12 @@
 import { type CANCEL_SYMBOL, Prompt } from '@clack/core';
 import { stripVTControlCharacters as strip, styleText } from 'node:util';
-import semverDiff from 'semver/functions/diff';
-import semverGt from 'semver/functions/gt';
-import semverMajor from 'semver/functions/major';
-import semverMin from 'semver/ranges/min-version';
+import semverDiff from 'semver/functions/diff.js';
+import semverGt from 'semver/functions/gt.js';
+import semverMajor from 'semver/functions/major.js';
+import semverMin from 'semver/ranges/min-version.js';
 
-import type { PackageUpdate } from './index';
-import { colorizeDiff } from './utils';
+import type { PackageUpdate } from './index.js';
+import { colorizeDiff } from './utils.js';
 
 type Color = Parameters<typeof styleText>[0];
 
