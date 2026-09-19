@@ -305,10 +305,10 @@ void (async (): Promise<void> => {
             let latestVersions = await latestVersion(pkgJson, { useCache: options.cache });
             if (!options.all) {
                 latestVersions = latestVersions.filter(item =>
-                    (item.local !== item.wanted)
+                    (item.error !== undefined)
+                    || (item.local !== item.wanted)
                     || (item.local !== item.latest)
-                    || (item.wantedTagOrRange && (semverMin(item.wantedTagOrRange)?.version !== item.wanted))
-                    || (item.error),
+                    || (item.wantedTagOrRange && (semverMin(item.wantedTagOrRange)?.version !== item.wanted)),
                 );
             }
             const updates: PackageUpdate[] = await Promise.all(latestVersions
