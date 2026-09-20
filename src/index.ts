@@ -242,20 +242,20 @@ const resolvePackagePaths = async (args: string[]): Promise<string[]> => {
 };
 
 void (async (): Promise<void> => {
-    console.log(); // margin-top
-
-    const header = `📦 ${styleText(['bgCyan', 'black'], ' check-updates ')}`;
-
     const options = readOptions();
     if (options.version) {
         console.log(`v${packageJson.version}`);
         return;
-    } else if (options.help) {
-        displayHelp(header);
-        return;
     }
 
-    intro(header);
+    console.log(); // margin-top
+    const header = `📦 ${styleText(['bgCyan', 'black'], ' check-updates ')}`;
+    if (options.help) {
+        displayHelp(header);
+        return;
+    } else {
+        intro(header);
+    }
 
     if (options.global) {
         const s = startSpinner(styleText('cyan', 'Checking updates'));
