@@ -1,10 +1,16 @@
 import { styleText } from 'node:util';
 import packageJson from 'package-json';
+import semverRange from 'semver/classes/range.js';
 import semverLt from 'semver/functions/lt.js';
 import semverValid from 'semver/functions/valid.js';
 import semverMinVersion from 'semver/ranges/min-version.js';
 
 type Color = Parameters<typeof styleText>[0];
+
+export const isBoundedRange = (range: string): boolean =>
+    new semverRange(range).set.every(comparators =>
+        comparators.some(c => ['<', '<=', ''].includes(c.operator)),
+    );
 
 export const getPackageHomePage = async (name: string): Promise<string | undefined> => {
     try {

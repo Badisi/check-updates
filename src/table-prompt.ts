@@ -3,10 +3,12 @@ import { stripVTControlCharacters as strip, styleText } from 'node:util';
 import semverDiff from 'semver/functions/diff.js';
 import semverGt from 'semver/functions/gt.js';
 import semverMajor from 'semver/functions/major.js';
+import semverSatisfies from 'semver/functions/satisfies.js';
 import semverMin from 'semver/ranges/min-version.js';
+import semverValidRange from 'semver/ranges/valid.js';
 
 import type { PackageUpdate } from './index.js';
-import { colorizeDiff } from './utils.js';
+import { colorizeDiff, isBoundedRange } from './utils.js';
 
 type Color = Parameters<typeof styleText>[0];
 
@@ -342,7 +344,7 @@ const getTableRows = (updates: PackageUpdate[]): TableRow[] => {
             if (isRowSelectable) {
                 if (item.installed !== item.wanted) {
                     item.isWantedSelectable = true;
-                } else if (semverMin(item.tagOrRange)?.version !== item.wanted) {
+                } else if (semverValidRange(item.tagOrRange) && !semverSatisfies(item.wanted, item.tagOrRange)) {
                     item.isWantedSelectable = true;
                 }
 
@@ -395,13 +397,14 @@ const getTableRowGroupIdForPackage = (pkg: PackageUpdate): TableRowGroupId => {
         return 'unavailable';
     } else if (!pkg.wanted) {
         return 'invalid';
-    } else if (pkg.installed && pkg.wanted && semverGt(pkg.installed, pkg.wanted)) {
+    } else if (pkg.installed && pkg.tagOrRange && semverValidRange(pkg.tagOrRange) && !semverSatisfies(pkg.installed, pkg.tagOrRange)) {
         return 'unsatisfied';
     } else if (pkg.installed && pkg.wanted && pkg.latest) {
         const newVersion = (pkg.installed !== pkg.wanted) ? pkg.wanted : pkg.latest;
         const releaseType = semverDiff(pkg.installed, newVersion);
         if (releaseType === null) {
-            if (pkg.tagOrRange && (semverMin(pkg.tagOrRange)?.version !== pkg.wanted)) {
+            const range = pkg.tagOrRange && semverValidRange(pkg.tagOrRange);
+            if (range && isBoundedRange(range) && (semverMin(range)?.version !== pkg.wanted)) {
                 return 'unsynced';
             }
             return 'latest';

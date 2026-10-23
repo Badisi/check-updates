@@ -9,7 +9,7 @@ import { glob } from 'tinyglobby';
 
 import packageJson from '../package.json' with { type: 'json' };
 import { table, type TableSelectedItem } from './table-prompt.js';
-import { colorizeDiff, getPackageHomePage, updateSemverRange } from './utils.js';
+import { colorizeDiff, getPackageHomePage, isBoundedRange, updateSemverRange } from './utils.js';
 
 interface UpdateResult {
     pkgName: string;
@@ -308,7 +308,7 @@ void (async (): Promise<void> => {
                     (item.error !== undefined)
                     || (item.local !== item.wanted)
                     || (item.local !== item.latest)
-                    || (item.wantedTagOrRange && (semverMin(item.wantedTagOrRange)?.version !== item.wanted)),
+                    || (item.wantedTagOrRange && isBoundedRange(item.wantedTagOrRange) && (semverMin(item.wantedTagOrRange)?.version !== item.wanted)),
                 );
             }
             const updates: PackageUpdate[] = await Promise.all(latestVersions
